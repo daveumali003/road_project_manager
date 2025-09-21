@@ -1,13 +1,17 @@
 # Road Project Manager
 
-A comprehensive web mapping application for managing road infrastructure projects with geospatial capabilities.
+A comprehensive multi-layer GIS web application for managing road infrastructure projects with advanced geospatial mapping capabilities.
 
 ## Features
 
-- 🗺️ **Interactive Web Maps** - Visualize project areas and road geometries using Leaflet
+- 🗺️ **Multi-Layer GIS Interface** - Professional mapping interface with layer controls, data tables, and toggleable visibility
+- ✏️ **Advanced Polyline Editing** - Interactive vertex manipulation with drag, add, and delete capabilities
+- 🎨 **Custom Polyline Colors** - Visual project differentiation with user-selectable color schemes
+- 📊 **Interactive Data Tables** - Sortable bottom-positioned tables with real-time updates and CRUD operations
+- 🖱️ **Click-to-Preview System** - Clean map-first UI with popup project details and actions
 - 📱 **Mobile Companion App** - Android app for field data collection
-- 🗃️ **PostGIS Integration** - Store and query geospatial road project data
-- 📊 **Project Management** - Track status, budgets, timelines, and progress
+- 🗃️ **PostGIS Integration** - Store and query geospatial road project data with dual model support
+- 📈 **Real-time Project Management** - Track status, budgets, timelines, and progress with immediate updates
 - 📸 **Geotagged Photos** - Document projects with location-aware imagery
 - ☁️ **AWS Ready** - Production deployment on AWS with Docker
 
@@ -79,14 +83,27 @@ docker-compose up --build
 
 ```
 road_project_manager/
-├── backend/                 # Django REST API with PostGIS
-│   ├── projects/           # Main app with geospatial models
+├── backend/                 # Django REST API with dual model support
+│   ├── projects/           # Main app with geospatial models (SQLite + PostGIS)
+│   │   ├── models.py       # Currently active SQLite models
+│   │   ├── models_postgis.py # Production PostGIS models
+│   │   ├── serializers.py  # REST API serializers
+│   │   ├── views.py        # API endpoints with geographic features
+│   │   └── admin.py        # Admin interface with map widgets
 │   ├── road_project_manager/  # Django settings
+│   │   ├── settings.py     # PostGIS production settings
+│   │   └── settings_test.py # SQLite development settings
 │   └── requirements.txt    # Python dependencies
-├── frontend/               # React web application
+├── frontend/               # React web application with Leaflet
 │   ├── src/
 │   │   ├── components/     # React components
-│   │   └── services/       # API client
+│   │   │   ├── MapView.js  # Main mapping with advanced editing
+│   │   │   ├── LayerControl.js # Layer management panel
+│   │   │   ├── DataTable.js # Interactive data tables
+│   │   │   ├── ProjectForm.js # Project creation forms
+│   │   │   ├── EditProjectForm.js # Project editing forms
+│   │   │   └── ProjectPreview.js # Click-to-preview popups
+│   │   └── services/       # API client with authentication
 │   └── package.json
 ├── android/                # Android mobile app
 │   ├── app/
@@ -101,8 +118,27 @@ road_project_manager/
 ### Adding New Features
 
 1. **Backend**: Add models in `projects/models.py`, create serializers, views, and URLs
-2. **Frontend**: Create React components in `src/components/`
-3. **Android**: Add Kotlin activities and fragments in the Android project
+2. **Frontend**: Create React components in `src/components/`, integrate with layer system and data tables
+3. **Multi-Layer Integration**: Update LayerControl.js and App.js for new layer types
+4. **Android**: Add Kotlin activities and fragments in the Android project
+
+### Current Interface Overview
+
+The application features a sophisticated multi-layer GIS interface:
+
+- **Layer Control Panel** (Left): Toggle layer visibility, create new projects (➕), view data tables (📊)
+- **Interactive Map** (Center): Click-to-preview popups, polyline editing, real-time visualization
+- **Drawing Controls** (Right): Appear during drawing/editing to avoid layer control interference
+- **Data Tables** (Bottom): Sortable tables with CRUD operations, taking up to 50% screen height
+
+### Working with Projects
+
+1. **Create**: Click ➕ in "Road Projects" layer → draw polyline → fill form with color picker
+2. **View**: Click any polyline to open preview popup with project details
+3. **Edit**: Use "Edit Project" button in popup or edit button (✏️) in data table
+4. **Shape Edit**: Use "Edit Shape" to enter vertex editing mode with drag/add/delete
+5. **Delete**: Use delete button with confirmation in popup or table (🗑️)
+6. **Table View**: Click 📊 to open sortable data table at bottom of screen
 
 ### Database Migrations
 
@@ -175,10 +211,10 @@ The Django REST API provides endpoints for:
 curl -H "Authorization: Token 67ef279f2525274ec5a6a6470436047824fe1ada" \
   "http://localhost:8000/api/projects/"
 
-# Create a new project
+# Create a new project with polyline and custom color
 curl -X POST -H "Authorization: Token 67ef279f2525274ec5a6a6470436047824fe1ada" \
   -H "Content-Type: application/json" \
-  -d '{"name": "Test Project", "status": "planned", "latitude": 40.7, "longitude": -73.9}' \
+  -d '{"name": "Test Project", "status": "planned", "latitude": 40.7, "longitude": -73.9, "polyline_coordinates": [[40.7128, -74.0060], [40.7130, -74.0065]], "polyline_color": "#ff5733"}' \
   "http://localhost:8000/api/projects/"
 
 # Find nearby projects
@@ -186,7 +222,12 @@ curl -H "Authorization: Token 67ef279f2525274ec5a6a6470436047824fe1ada" \
   "http://localhost:8000/api/projects/nearby/?lat=40.7&lng=-73.9&radius=50"
 ```
 
-Current implementation uses simple lat/lng coordinates. Production version supports full GeoJSON format.
+Current implementation supports:
+- Simple lat/lng coordinates for project centers
+- JSON arrays for polyline coordinates: `[[lat, lng], [lat, lng], ...]`
+- Custom polyline colors as hex strings: `#ff5733`
+- Real-time updates and advanced vertex editing
+- Production version supports full GeoJSON format with PostGIS
 
 ## Mobile App Setup
 
