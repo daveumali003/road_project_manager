@@ -2,9 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import './App.css';
 import MapView from './components/MapView';
-import ProjectList from './components/ProjectList';
 import EditProjectForm from './components/EditProjectForm';
 import ProjectPreview from './components/ProjectPreview';
+import LayerControl from './components/LayerControl';
+import DataTable from './components/DataTable';
 import { projectService } from './services/api';
 
 function App() {
@@ -13,7 +14,17 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [editingProject, setEditingProject] = useState(null);
   const [editingPolyline, setEditingPolyline] = useState(null);
-  const [showSidebar, setShowSidebar] = useState(false);
+  const [layers, setLayers] = useState([
+    {
+      id: 'road_projects',
+      name: 'Road Projects',
+      type: 'road_projects',
+      visible: true,
+      data: []
+    }
+  ]);
+  const [activeTable, setActiveTable] = useState(null);
+  const [startDrawing, setStartDrawing] = useState(false);
 
   useEffect(() => {
     loadProjects();
@@ -27,6 +38,16 @@ function App() {
       const projectsData = data.results || data.features || data;
       console.log('Loaded projects:', projectsData);
       setProjects(projectsData);
+
+      // Update road projects layer data
+      setLayers(prevLayers =>
+        prevLayers.map(layer =>
+          layer.id === 'road_projects'
+            ? { ...layer, data: projectsData }
+            : layer
+        )
+      );
+
       setLoading(false);
     } catch (error) {
       console.error('Error loading projects:', error);
@@ -40,6 +61,39 @@ function App() {
 
   const handleClosePreview = () => {
     setSelectedProject(null);
+  };
+
+  const handleLayerToggle = (layerId) => {
+    setLayers(prevLayers =>
+      prevLayers.map(layer =>
+        layer.id === layerId
+          ? { ...layer, visible: !layer.visible }
+          : layer
+      )
+    );
+  };
+
+  const handleShowTable = (layer) => {
+    setActiveTable(layer);
+  };
+
+  const handleCloseTable = () => {
+    setActiveTable(null);
+  };
+
+  const handleTableRowClick = (row) => {
+    // Handle row click based on layer type
+    if (activeTable?.type === 'road_projects') {
+      setSelectedProject(row);
+    }
+  };
+
+  const handleCreateNew = (layer) => {
+    if (layer.type === 'road_projects') {
+      setStartDrawing(true);
+      // Reset after triggering
+      setTimeout(() => setStartDrawing(false), 100);
+    }
   };
 
   const handleProjectCreate = async (projectData) => {
@@ -169,51 +223,22 @@ function App() {
           <Route path="/" element={
             <div className="app-container">
               <MapView
-                projects={projects}
+                projects={layers.find(l => l.id === 'road_projects')?.visible ? projects : []}
                 selectedProject={selectedProject}
                 onProjectSelect={handleProjectSelect}
                 onProjectCreate={handleProjectCreate}
                 editingPolyline={editingPolyline}
                 onPolylineEdit={handlePolylineEdit}
+                startDrawing={startDrawing}
               />
-              {/* Sidebar toggle button */}
-              <button
-                className="sidebar-toggle"
-                onClick={() => setShowSidebar(!showSidebar)}
-                style={{
-                  position: 'absolute',
-                  top: '10px',
-                  right: showSidebar ? '320px' : '10px',
-                  zIndex: 1001,
-                  background: '#007bff',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '4px',
-                  padding: '8px 12px',
-                  cursor: 'pointer',
-                  transition: 'right 0.3s ease'
-                }}
-              >
-                {showSidebar ? '×' : '☰'}
-              </button>
 
-              {/* Conditional sidebar */}
-              {showSidebar && (
-                <div className="sidebar">
-                  <h2>Road Projects</h2>
-                  {loading ? (
-                    <p>Loading projects...</p>
-                  ) : (
-                    <ProjectList
-                      projects={projects}
-                      selectedProject={selectedProject}
-                      onProjectSelect={handleProjectSelect}
-                      onProjectDelete={handleProjectDelete}
-                      onProjectEdit={handleProjectEdit}
-                    />
-                  )}
-                </div>
-              )}
+              {/* Layer Control */}
+              <LayerControl
+                layers={layers}
+                onLayerToggle={handleLayerToggle}
+                onShowTable={handleShowTable}
+                onCreateNew={handleCreateNew}
+              />
             </div>
           } />
         </Routes>
@@ -233,6 +258,17 @@ function App() {
           <ProjectPreview
             project={selectedProject}
             onClose={handleClosePreview}
+            onEdit={handleProjectEdit}
+            onDelete={handleProjectDelete}
+          />
+        )}
+
+        {/* Data Table */}
+        {activeTable && (
+          <DataTable
+            layer={layers.find(l => l.id === activeTable.id) || activeTable}
+            onClose={handleCloseTable}
+            onRowClick={handleTableRowClick}
             onEdit={handleProjectEdit}
             onDelete={handleProjectDelete}
           />

@@ -32,7 +32,7 @@ const DrawingHandler = ({ drawingMode, editMode, onAddPoint, onFinishDrawing, on
   return null;
 };
 
-const MapView = ({ projects, selectedProject, onProjectSelect, onProjectCreate, editingPolyline, onPolylineEdit }) => {
+const MapView = ({ projects, selectedProject, onProjectSelect, onProjectCreate, editingPolyline, onPolylineEdit, startDrawing }) => {
   const mapRef = useRef();
   const [drawingMode, setDrawingMode] = useState(false);
   const [currentPolyline, setCurrentPolyline] = useState([]);
@@ -54,6 +54,13 @@ const MapView = ({ projects, selectedProject, onProjectSelect, onProjectCreate, 
       }
     }
   }, [selectedProject]);
+
+  // Effect to start drawing when startDrawing prop changes
+  useEffect(() => {
+    if (startDrawing) {
+      handleStartDrawing();
+    }
+  }, [startDrawing]);
 
   // Initialize editing vertices when editing polyline changes
   useEffect(() => {
@@ -210,41 +217,41 @@ const MapView = ({ projects, selectedProject, onProjectSelect, onProjectCreate, 
 
   return (
     <>
-      <div className="map-controls">
-        {!editMode ? (
-          <>
-            <button
-              onClick={drawingMode ? handleCancelDrawing : handleStartDrawing}
-              className={drawingMode ? 'cancel-btn' : 'draw-btn'}
-            >
-              {drawingMode ? 'Cancel Drawing' : 'Draw New Road Project'}
-            </button>
-            {drawingMode && (
+      {(drawingMode || editMode) && (
+        <div className="map-controls">
+          {drawingMode ? (
+            <>
+              <button
+                onClick={handleCancelDrawing}
+                className="cancel-btn"
+              >
+                Cancel Drawing
+              </button>
               <div className="drawing-instructions">
                 Click on map to add points. Double-click to finish.
               </div>
-            )}
-          </>
-        ) : (
-          <>
-            <button
-              onClick={handleSavePolylineEdit}
-              className="draw-btn"
-            >
-              Save Changes
-            </button>
-            <button
-              onClick={handleCancelPolylineEdit}
-              className="cancel-btn"
-            >
-              Cancel Edit
-            </button>
-            <div className="drawing-instructions">
-              Drag vertices to move, click to add, double-click vertex to delete.
-            </div>
-          </>
-        )}
-      </div>
+            </>
+          ) : (
+            <>
+              <button
+                onClick={handleSavePolylineEdit}
+                className="draw-btn"
+              >
+                Save Changes
+              </button>
+              <button
+                onClick={handleCancelPolylineEdit}
+                className="cancel-btn"
+              >
+                Cancel Edit
+              </button>
+              <div className="drawing-instructions">
+                Drag vertices to move, click to add, double-click vertex to delete.
+              </div>
+            </>
+          )}
+        </div>
+      )}
 
       <MapContainer
         center={defaultCenter}

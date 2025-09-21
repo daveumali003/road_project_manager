@@ -133,8 +133,8 @@ code {
 .map-controls {
   position: absolute;
   top: 10px;
-  left: 10px;
-  z-index: 1000;
+  right: 10px;
+  z-index: 1100;
   background: white;
   padding: 10px;
   border-radius: 5px;
@@ -411,4 +411,234 @@ code {
 
 .project-preview-actions .delete-btn:hover {
   background-color: #c82333;
+}
+
+/* Layer Control Styles */
+.layer-control {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  background: white;
+  padding: 15px;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  z-index: 1000;
+  min-width: 200px;
+}
+
+.layer-control h4 {
+  margin: 0 0 10px 0;
+  color: #333;
+  font-size: 14px;
+}
+
+.layer-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.layer-item {
+  border: 1px solid #eee;
+  border-radius: 6px;
+  padding: 8px;
+}
+
+.layer-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.layer-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.layer-checkbox input {
+  margin: 0;
+}
+
+.layer-name {
+  font-weight: 500;
+  color: #333;
+  font-size: 13px;
+}
+
+.layer-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.create-btn {
+  background: #28a745;
+  border: none;
+  border-radius: 4px;
+  padding: 4px 6px;
+  cursor: pointer;
+  color: white;
+  font-size: 12px;
+}
+
+.create-btn:hover {
+  background: #218838;
+}
+
+.table-btn {
+  background: #17a2b8;
+  border: none;
+  border-radius: 4px;
+  padding: 4px 6px;
+  cursor: pointer;
+  color: white;
+  font-size: 12px;
+}
+
+.table-btn:hover {
+  background: #138496;
+}
+
+.layer-info {
+  margin-top: 4px;
+}
+
+.layer-count {
+  font-size: 11px;
+  color: #666;
+}
+
+/* Data Table Styles */
+.data-table-container {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: white;
+  border-top: 2px solid #ddd;
+  box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+  z-index: 1500;
+  max-height: 50vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.data-table-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 20px;
+  border-bottom: 1px solid #eee;
+  background: #f8f9fa;
+}
+
+.table-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.table-title h4 {
+  margin: 0;
+  color: #333;
+  font-size: 16px;
+}
+
+.table-count {
+  background: #6c757d;
+  color: white;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+}
+
+.close-table-btn {
+  background: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 6px 10px;
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+}
+
+.close-table-btn:hover {
+  background: #c82333;
+}
+
+.data-table-wrapper {
+  flex: 1;
+  overflow: auto;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.data-table th,
+.data-table td {
+  padding: 8px 12px;
+  text-align: left;
+  border-bottom: 1px solid #eee;
+}
+
+.data-table th {
+  background: #f8f9fa;
+  font-weight: 600;
+  color: #495057;
+  position: sticky;
+  top: 0;
+}
+
+.data-table th.sortable {
+  cursor: pointer;
+  user-select: none;
+}
+
+.data-table th.sortable:hover {
+  background: #e9ecef;
+}
+
+.sort-indicator {
+  color: #007bff;
+}
+
+.table-row {
+  cursor: pointer;
+  transition: background-color 0.1s;
+}
+
+.table-row:hover {
+  background-color: #f8f9fa;
+}
+
+.color-cell {
+  display: inline-block;
+}
+
+.actions-cell {
+  text-align: center;
+}
+
+.table-edit-btn,
+.table-delete-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px 6px;
+  margin: 0 2px;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.table-edit-btn:hover {
+  background: #e3f2fd;
+}
+
+.table-delete-btn:hover {
+  background: #ffebee;
 }

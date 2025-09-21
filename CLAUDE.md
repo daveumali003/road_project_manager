@@ -82,13 +82,15 @@ docker-compose up --build
 
 ### Frontend (React + Leaflet)
 - **Mapping**: Interactive maps with project visualization using Leaflet
+- **Multi-Layer Architecture**: Extensible layer system with road projects as the primary layer
 - **Components**:
   - `MapView`: Main map component with drawing, editing, and visualization modes
-  - `ProjectList`: Optional sidebar component with project cards (hidden by default)
   - `ProjectForm`: Modal for creating new projects after drawing polylines
   - `EditProjectForm`: Modal for editing existing projects with "Edit Shape" button
   - `ProjectPreview`: Click-to-preview popup component for polyline interactions
-- **User Interface**: Clean map-first interface with click-to-preview interactions and optional sidebar
+  - `LayerControl`: Layer management panel with visibility toggles, create new (➕), and table view (📊) buttons
+  - `DataTable`: Bottom-positioned sortable table for layer data with row actions
+- **User Interface**: Multi-layer GIS-like interface with layer controls on left, drawing controls on right when active
 - **API Integration**: Axios client with authentication interceptors and comprehensive service modules (projectService, segmentService, photoService, authService)
 - **Dependencies**: React 18, Leaflet 4.2.1, React Router 6, Axios (no Material-UI to avoid conflicts)
 - **Authentication**: Token-based auth stored in localStorage with automatic header injection
@@ -101,11 +103,14 @@ docker-compose up --build
 
 ## Key Features
 
+- **Multi-Layer GIS Interface**: Extensible layer system with toggleable visibility and data management
+- **Interactive Data Tables**: Bottom-positioned sortable tables with CRUD operations and real-time updates
 - **Geospatial Data**: Store and visualize project boundaries and road geometries
-- **Project Management**: Track status, priority, budget, and timeline
+- **Project Management**: Track status, priority, budget, and timeline with custom polyline colors
+- **Advanced Polyline Editing**: Interactive vertex manipulation with drag, add, and delete capabilities
 - **Photo Documentation**: Geotagged photos with project association
 - **Multi-platform**: Web dashboard and mobile field app
-- **Real-time Updates**: Project status and progress tracking
+- **Real-time Updates**: Project status and progress tracking with immediate UI synchronization
 
 ## Database Models
 
@@ -172,16 +177,22 @@ GitHub Actions workflow for automated testing and deployment to AWS.
 - Google Maps API key (for Android)
 - AWS account (for production deployment)
 
-## Interactive Map Features (COMPLETE)
+## Multi-Layer GIS Interface (COMPLETE)
 
-### Project Creation & Management
-The application now supports comprehensive project management directly on the map:
+### Layer Management & Project Creation
+The application features a comprehensive multi-layer GIS-like interface:
+
+**Layer Control System:**
+1. **Layer Panel**: Located on the left side with layer visibility toggles (✓)
+2. **Create New Projects**: Click the ➕ button next to "Road Projects" layer to start drawing
+3. **Table View**: Click the 📊 button to open sortable data tables at bottom of screen
+4. **Layer Visibility**: Toggle individual layers on/off to control map display
 
 **Map-Based Project Creation:**
-1. Click "Draw New Road Project" button in the map controls
+1. Click the ➕ button in the "Road Projects" layer control
 2. Click on the map to add points to the polyline
 3. Double-click to finish drawing
-4. Fill out the project form that appears
+4. Fill out the project form that appears with color picker
 5. Click "Create Project" to save
 
 **Project Interaction & Management:**
@@ -189,30 +200,40 @@ The application now supports comprehensive project management directly on the ma
 2. **Preview Actions**: From the popup, click "Edit Project" or "Delete Project" (with confirmation)
 3. **Edit Project Details**: Edit name, description, status, priority, budget, and polyline color
 4. **Shape Editing**: Click "Edit Shape" to enter polyline vertex editing mode
-5. **Optional Sidebar**: Use hamburger menu (☰) to show/hide the full project list sidebar
+5. **Table Management**: Use data tables for bulk operations, sorting, and detailed view
 
 **Advanced Polyline Vertex Editing:**
 - **Drag Vertices**: Purple circle markers allow dragging to move vertices
 - **Delete Vertices**: Double-click any vertex to delete it (minimum 2 vertices required)
 - **Add Vertices**: Click anywhere on the map to add new vertices at optimal positions
 - **Visual Feedback**: Purple polyline with white-filled circle markers during editing
-- **Save/Cancel**: Map controls for saving changes or canceling edits
+- **Save/Cancel**: Map controls positioned on right side to avoid layer control interference
+
+**Data Table Features:**
+- **Bottom-Positioned Interface**: Tables appear at bottom taking up to 50% screen height
+- **Sortable Columns**: Click column headers to sort by any field (status, priority, budget, etc.)
+- **Row Actions**: Edit (✏️) and Delete (🗑️) buttons in each row with confirmation dialogs
+- **Real-time Updates**: Tables automatically refresh when projects are created, edited, or deleted
+- **Custom Formatting**: Special formatting for colors (color swatches), dates, and currency
+- **Row Selection**: Click rows to select projects on map, full integration with map interactions
 
 **Technical Implementation:**
 - **Frontend**: React Leaflet with interactive vertex manipulation using draggable Marker components
 - **Backend**: JSON storage of polyline coordinates with full CRUD operations
 - **Database**: SQLite with JSON field storing arrays of [lat, lng] coordinates
 - **API**: RESTful endpoints with complete project lifecycle management
-- **State Management**: Complex state handling for editing modes (normal, drawing, vertex editing)
+- **State Management**: Complex state handling for layers, editing modes, and table integration
+- **Component Architecture**: Modular design with LayerControl, DataTable, MapView coordination
 
 **Features:**
-- **Custom Polyline Colors**: Users can select custom colors for polylines with color picker in forms
-- **Click-to-Preview Interface**: Clean map-first UI with popup previews instead of persistent sidebar
+- **Multi-Layer System**: Extensible architecture supporting future layer types beyond road projects
+- **Custom Polyline Colors**: Users can select custom colors for polylines with large, visible color picker
+- **GIS-Like Interface**: Professional mapping interface with layer controls and data management
 - **Automatic Center Calculation**: Project center point automatically calculated from polyline vertices
-- **Real-time Updates**: Polyline colors and data update immediately without page refresh
+- **Real-time Updates**: All changes update immediately without page refresh across map and tables
 - **Dual Rendering Support**: Both point-based and polyline projects supported
 - **Interactive Polyline Preview**: Live polyline preview during creation and editing
-- **Seamless Mode Switching**: Between view, create, edit, and vertex editing modes
+- **Seamless Mode Switching**: Between view, create, edit, vertex editing, and table modes
 - **Form Validation**: Error handling with user feedback and confirmation dialogs
 
 ## Current Development Status
@@ -221,14 +242,16 @@ The application now supports comprehensive project management directly on the ma
 - **Backend**: Django running on SQLite with simplified models ✅
 - **Frontend**: React with Leaflet maps running on localhost:3000 ✅
 - **API**: Full CRUD operations with token authentication ✅
-- **Project Creation**: Interactive map-based polyline drawing ✅
+- **Multi-Layer Interface**: GIS-like layer control system with toggleable visibility ✅
+- **Data Tables**: Bottom-positioned sortable tables with real-time updates ✅
+- **Project Creation**: Interactive map-based polyline drawing via layer controls ✅
 - **Project Editing**: Complete project data editing with modal forms ✅
-- **Project Deletion**: Confirmation-based project removal ✅
+- **Project Deletion**: Confirmation-based project removal in both popup and table views ✅
 - **Polyline Vertex Editing**: Advanced geometry editing with drag/drop/add/delete ✅
 - **Custom Polyline Colors**: Color picker integration with real-time updates ✅
 - **Click-to-Preview UI**: Interactive popup system for project details ✅
 - **Map Location**: Mindanao-centered for Philippines road projects ✅
-- **Real-time Updates**: Live project visualization and state management ✅
+- **Real-time Updates**: Live project visualization and state management across all interfaces ✅
 
 ### Testing Endpoints (POC Mode - No Authentication Required)
 ```bash
@@ -279,8 +302,11 @@ curl -H "Authorization: Token 67ef279f2525274ec5a6a6470436047824fe1ada" \
 - Authentication handled via axios interceptors with localStorage tokens
 
 **User Interface Workflow:**
-- **Clean Map View**: Default interface shows only the map with polylines and a hamburger menu
+- **Multi-Layer GIS Interface**: Default view shows map with layer control panel on left side
+- **Layer Management**: Toggle layer visibility, create new projects (➕), and open data tables (📊)
+- **Drawing Controls**: When active, drawing/editing controls appear on right side to avoid interference
 - **Click Interactions**: Click polylines to open detailed preview popups
+- **Table Integration**: Bottom-positioned data tables with full CRUD operations and sorting
 - **Form Integration**: Color picker inputs with large, visible color selection areas
 - **State Management**: Real-time updates without page refresh using immediate local state updates
 - **Confirmation Dialogs**: Delete actions require user confirmation with project name display
