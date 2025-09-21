@@ -270,8 +270,8 @@ const MapView = ({ projects, selectedProject, onProjectSelect, onProjectCreate, 
           <Polyline
             positions={currentPolyline}
             color="red"
-            weight={4}
-            opacity={0.8}
+            weight={6}
+            opacity={0.9}
           />
         )}
 
@@ -279,20 +279,21 @@ const MapView = ({ projects, selectedProject, onProjectSelect, onProjectCreate, 
         {projects
           .filter(project => project.polyline_coordinates && project.polyline_coordinates.length > 1)
           .filter(project => !editingPolyline || project.id !== editingPolyline.id) // Hide if being edited
-          .map((project) => (
+          .map((project) => {
+            console.log(`Rendering project ${project.id} with color:`, project.polyline_color || project.color || '#3388ff');
+            return (
             <Polyline
-              key={`polyline-${project.id}`}
+              key={`polyline-${project.id}-${project.polyline_color || project.color || '#3388ff'}`}
               positions={project.polyline_coordinates}
-              color={project.status === 'completed' ? 'green' :
-                     project.status === 'in_progress' ? 'blue' :
-                     project.status === 'on_hold' ? 'orange' : 'gray'}
-              weight={3}
+              color={project.polyline_color || project.color || '#3388ff'}
+              weight={5}
               opacity={0.7}
               eventHandlers={{
                 click: () => onProjectSelect(project),
               }}
             />
-          ))
+            );
+          })
         }
 
         {/* Render editing polyline with vertices */}
@@ -300,8 +301,8 @@ const MapView = ({ projects, selectedProject, onProjectSelect, onProjectCreate, 
           <>
             <Polyline
               positions={editingVertices}
-              color="purple"
-              weight={4}
+              color={editingPolyline?.polyline_color || editingPolyline?.color || "purple"}
+              weight={6}
               opacity={0.8}
             />
             {editingVertices.map((vertex, index) => (

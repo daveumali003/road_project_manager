@@ -84,9 +84,11 @@ docker-compose up --build
 - **Mapping**: Interactive maps with project visualization using Leaflet
 - **Components**:
   - `MapView`: Main map component with drawing, editing, and visualization modes
-  - `ProjectList`: Sidebar component with project cards, edit/delete buttons
+  - `ProjectList`: Optional sidebar component with project cards (hidden by default)
   - `ProjectForm`: Modal for creating new projects after drawing polylines
   - `EditProjectForm`: Modal for editing existing projects with "Edit Shape" button
+  - `ProjectPreview`: Click-to-preview popup component for polyline interactions
+- **User Interface**: Clean map-first interface with click-to-preview interactions and optional sidebar
 - **API Integration**: Axios client with authentication interceptors and comprehensive service modules (projectService, segmentService, photoService, authService)
 - **Dependencies**: React 18, Leaflet 4.2.1, React Router 6, Axios (no Material-UI to avoid conflicts)
 - **Authentication**: Token-based auth stored in localStorage with automatic header injection
@@ -108,7 +110,11 @@ docker-compose up --build
 ## Database Models
 
 ### Current Implementation (SQLite with Simple Coordinates)
-- **RoadProject**: Main project entity with `latitude`/`longitude` fields for location AND `polyline_coordinates` JSON field for storing road polylines as arrays of [lat, lng] points
+- **RoadProject**: Main project entity with:
+  - `latitude`/`longitude` fields for project center point
+  - `polyline_coordinates` JSON field storing road polylines as arrays of [lat, lng] points
+  - `polyline_color` CharField storing hex color codes (e.g., '#3388ff') for custom polyline colors
+  - Standard project fields (name, description, status, priority, budget, dates)
 - **RoadSegment**: Individual road sections with start/end lat/lng coordinates
 - **ProjectPhoto**: Geotagged images with `latitude`/`longitude` fields
 - **ProjectUpdate**: Progress updates and communications
@@ -178,12 +184,12 @@ The application now supports comprehensive project management directly on the ma
 4. Fill out the project form that appears
 5. Click "Create Project" to save
 
-**Project Editing & Management:**
-1. Click any project in the sidebar to select it
-2. Click the edit button (✎) to open the EditProjectForm modal
-3. Edit project details (name, description, status, priority, budget)
-4. Click "Edit Shape" to enter polyline vertex editing mode
-5. Use delete button (×) to remove projects with confirmation
+**Project Interaction & Management:**
+1. **Click-to-Preview**: Click any polyline on the map to open a popup preview with project details
+2. **Preview Actions**: From the popup, click "Edit Project" or "Delete Project" (with confirmation)
+3. **Edit Project Details**: Edit name, description, status, priority, budget, and polyline color
+4. **Shape Editing**: Click "Edit Shape" to enter polyline vertex editing mode
+5. **Optional Sidebar**: Use hamburger menu (☰) to show/hide the full project list sidebar
 
 **Advanced Polyline Vertex Editing:**
 - **Drag Vertices**: Purple circle markers allow dragging to move vertices
@@ -200,12 +206,14 @@ The application now supports comprehensive project management directly on the ma
 - **State Management**: Complex state handling for editing modes (normal, drawing, vertex editing)
 
 **Features:**
-- Color-coded polylines by project status (planned=yellow, in_progress=green, completed=blue, on_hold=red)
-- Automatic calculation of project center point from polyline vertices
-- Dual rendering support for both point-based and polyline projects
-- Real-time polyline preview during creation and editing
-- Seamless mode switching between view, create, edit, and vertex editing modes
-- Form validation and error handling with user feedback
+- **Custom Polyline Colors**: Users can select custom colors for polylines with color picker in forms
+- **Click-to-Preview Interface**: Clean map-first UI with popup previews instead of persistent sidebar
+- **Automatic Center Calculation**: Project center point automatically calculated from polyline vertices
+- **Real-time Updates**: Polyline colors and data update immediately without page refresh
+- **Dual Rendering Support**: Both point-based and polyline projects supported
+- **Interactive Polyline Preview**: Live polyline preview during creation and editing
+- **Seamless Mode Switching**: Between view, create, edit, and vertex editing modes
+- **Form Validation**: Error handling with user feedback and confirmation dialogs
 
 ## Current Development Status
 
@@ -217,6 +225,8 @@ The application now supports comprehensive project management directly on the ma
 - **Project Editing**: Complete project data editing with modal forms ✅
 - **Project Deletion**: Confirmation-based project removal ✅
 - **Polyline Vertex Editing**: Advanced geometry editing with drag/drop/add/delete ✅
+- **Custom Polyline Colors**: Color picker integration with real-time updates ✅
+- **Click-to-Preview UI**: Interactive popup system for project details ✅
 - **Map Location**: Mindanao-centered for Philippines road projects ✅
 - **Real-time Updates**: Live project visualization and state management ✅
 
@@ -225,9 +235,9 @@ The application now supports comprehensive project management directly on the ma
 # List all projects (unauthenticated for POC)
 curl "http://localhost:8000/api/projects/"
 
-# Create new project with polyline
+# Create new project with polyline and custom color
 curl -X POST -H "Content-Type: application/json" \
-  -d '{"name": "Test Road", "status": "planned", "latitude": 40.7, "longitude": -73.9, "polyline_coordinates": [[40.7128, -74.0060], [40.7130, -74.0065]]}' \
+  -d '{"name": "Test Road", "status": "planned", "latitude": 40.7, "longitude": -73.9, "polyline_coordinates": [[40.7128, -74.0060], [40.7130, -74.0065]], "polyline_color": "#ff5733"}' \
   "http://localhost:8000/api/projects/"
 
 # Test nearby projects
@@ -264,11 +274,20 @@ curl -H "Authorization: Token 67ef279f2525274ec5a6a6470436047824fe1ada" \
 **API Data Flow:**
 - All API calls use `projectService.update()` which requires complete project objects for PUT requests
 - Polyline coordinates stored as JSON arrays: `[[lat, lng], [lat, lng], ...]`
+- Polyline colors stored as hex strings: `"#ff5733"`
 - Center point automatically calculated from polyline vertices
 - Authentication handled via axios interceptors with localStorage tokens
 
+**User Interface Workflow:**
+- **Clean Map View**: Default interface shows only the map with polylines and a hamburger menu
+- **Click Interactions**: Click polylines to open detailed preview popups
+- **Form Integration**: Color picker inputs with large, visible color selection areas
+- **State Management**: Real-time updates without page refresh using immediate local state updates
+- **Confirmation Dialogs**: Delete actions require user confirmation with project name display
+
 **Debugging Map Issues:**
-- Check browser console for Leaflet errors
+- Check browser console for Leaflet errors and component rendering logs
 - Verify coordinate format: [latitude, longitude] not [lng, lat]
+- Monitor React key changes for polyline re-rendering (includes color in key)
 - Test with `console.log()` statements in event handlers
 - Ensure proper state transitions between editing modes

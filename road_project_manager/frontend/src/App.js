@@ -4,6 +4,7 @@ import './App.css';
 import MapView from './components/MapView';
 import ProjectList from './components/ProjectList';
 import EditProjectForm from './components/EditProjectForm';
+import ProjectPreview from './components/ProjectPreview';
 import { projectService } from './services/api';
 
 function App() {
@@ -12,6 +13,7 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [editingProject, setEditingProject] = useState(null);
   const [editingPolyline, setEditingPolyline] = useState(null);
+  const [showSidebar, setShowSidebar] = useState(false);
 
   useEffect(() => {
     loadProjects();
@@ -19,9 +21,12 @@ function App() {
 
   const loadProjects = async () => {
     try {
+      console.log('Loading projects...');
       const data = await projectService.getAll();
       // API returns paginated results in data.results
-      setProjects(data.results || data.features || data);
+      const projectsData = data.results || data.features || data;
+      console.log('Loaded projects:', projectsData);
+      setProjects(projectsData);
       setLoading(false);
     } catch (error) {
       console.error('Error loading projects:', error);
@@ -31,6 +36,10 @@ function App() {
 
   const handleProjectSelect = (project) => {
     setSelectedProject(project);
+  };
+
+  const handleClosePreview = () => {
+    setSelectedProject(null);
   };
 
   const handleProjectCreate = async (projectData) => {
@@ -66,16 +75,29 @@ function App() {
 
   const handleProjectUpdate = async (projectId, updatedData) => {
     try {
-      await projectService.update(projectId, updatedData);
+      console.log('Updating project with data:', updatedData);
+      const updatedProject = await projectService.update(projectId, updatedData);
+      console.log('Update response:', updatedProject);
+
       // Close edit form
       setEditingProject(null);
+
+      // Update the project in the local state immediately
+      setProjects(prevProjects =>
+        prevProjects.map(project =>
+          project.id === projectId
+            ? { ...project, ...updatedData, polyline_color: updatedData.polyline_color }
+            : project
+        )
+      );
+
       // Update selected project if it's the one being edited
       if (selectedProject && selectedProject.id === projectId) {
-        const updatedProject = await projectService.getById(projectId);
-        setSelectedProject(updatedProject);
+        setSelectedProject(prev => ({ ...prev, ...updatedData, polyline_color: updatedData.polyline_color }));
       }
-      // Reload projects to reflect the changes
-      loadProjects();
+
+      // Also reload projects to ensure consistency
+      await loadProjects();
     } catch (error) {
       console.error('Error updating project:', error);
       alert('Error updating project. Please try again.');
@@ -115,6 +137,7 @@ function App() {
         start_date: currentProject.start_date,
         end_date: currentProject.end_date,
         polyline_coordinates: newVertices,
+        polyline_color: currentProject.polyline_color,
         latitude: centerLat,
         longitude: centerLng
       };
@@ -126,7 +149,7 @@ function App() {
       setEditingPolyline(null);
 
       // Reload projects to reflect changes
-      loadProjects();
+      await loadProjects();
 
       // Update selected project if it's the one being edited
       if (selectedProject && selectedProject.id === projectId) {
@@ -153,20 +176,44 @@ function App() {
                 editingPolyline={editingPolyline}
                 onPolylineEdit={handlePolylineEdit}
               />
-              <div className="sidebar">
-                <h2>Road Projects</h2>
-                {loading ? (
-                  <p>Loading projects...</p>
-                ) : (
-                  <ProjectList
-                    projects={projects}
-                    selectedProject={selectedProject}
-                    onProjectSelect={handleProjectSelect}
-                    onProjectDelete={handleProjectDelete}
-                    onProjectEdit={handleProjectEdit}
-                  />
-                )}
-              </div>
+              {/* Sidebar toggle button */}
+              <button
+                className="sidebar-toggle"
+                onClick={() => setShowSidebar(!showSidebar)}
+                style={{
+                  position: 'absolute',
+                  top: '10px',
+                  right: showSidebar ? '320px' : '10px',
+                  zIndex: 1001,
+                  background: '#007bff',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  padding: '8px 12px',
+                  cursor: 'pointer',
+                  transition: 'right 0.3s ease'
+                }}
+              >
+                {showSidebar ? '×' : '☰'}
+              </button>
+
+              {/* Conditional sidebar */}
+              {showSidebar && (
+                <div className="sidebar">
+                  <h2>Road Projects</h2>
+                  {loading ? (
+                    <p>Loading projects...</p>
+                  ) : (
+                    <ProjectList
+                      projects={projects}
+                      selectedProject={selectedProject}
+                      onProjectSelect={handleProjectSelect}
+                      onProjectDelete={handleProjectDelete}
+                      onProjectEdit={handleProjectEdit}
+                    />
+                  )}
+                </div>
+              )}
             </div>
           } />
         </Routes>
@@ -178,6 +225,16 @@ function App() {
             onSave={handleProjectUpdate}
             onCancel={handleEditCancel}
             onEditShape={handleEditShape}
+          />
+        )}
+
+        {/* Project preview popup */}
+        {selectedProject && !editingProject && (
+          <ProjectPreview
+            project={selectedProject}
+            onClose={handleClosePreview}
+            onEdit={handleProjectEdit}
+            onDelete={handleProjectDelete}
           />
         )}
       </div>

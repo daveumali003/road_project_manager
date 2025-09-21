@@ -6,7 +6,8 @@ const ProjectForm = ({ coordinates, onSave, onCancel }) => {
     description: '',
     status: 'planned',
     priority: 'medium',
-    budget: ''
+    budget: '',
+    color: '#3388ff'
   });
 
   const handleChange = (e) => {
@@ -29,6 +30,7 @@ const ProjectForm = ({ coordinates, onSave, onCancel }) => {
       latitude: centerLat,
       longitude: centerLng,
       polyline_coordinates: coordinates,
+      polyline_color: formData.color,
       budget: formData.budget ? parseFloat(formData.budget) : null
     };
 
@@ -105,6 +107,24 @@ const ProjectForm = ({ coordinates, onSave, onCancel }) => {
               onChange={handleChange}
               min="0"
               step="0.01"
+            />
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="color">Polyline Color:</label>
+            <input
+              type="color"
+              id="color"
+              name="color"
+              value={formData.color}
+              onChange={handleChange}
+              style={{
+                width: '100%',
+                height: '40px',
+                border: '1px solid #ccc',
+                borderRadius: '4px',
+                cursor: 'pointer'
+              }}
             />
           </div>
 

@@ -6,7 +6,8 @@ const EditProjectForm = ({ project, onSave, onCancel, onEditShape }) => {
     description: '',
     status: 'planned',
     priority: 'medium',
-    budget: ''
+    budget: '',
+    color: '#3388ff'
   });
 
   // Initialize form data when project prop changes
@@ -17,7 +18,8 @@ const EditProjectForm = ({ project, onSave, onCancel, onEditShape }) => {
         description: project.description || '',
         status: project.status || 'planned',
         priority: project.priority || 'medium',
-        budget: project.budget ? project.budget.toString() : ''
+        budget: project.budget ? project.budget.toString() : '',
+        color: project.polyline_color || project.color || '#3388ff'
       });
     }
   }, [project]);
@@ -35,6 +37,7 @@ const EditProjectForm = ({ project, onSave, onCancel, onEditShape }) => {
 
     const updatedProjectData = {
       ...formData,
+      polyline_color: formData.color,
       budget: formData.budget ? parseFloat(formData.budget) : null
     };
 
@@ -113,6 +116,24 @@ const EditProjectForm = ({ project, onSave, onCancel, onEditShape }) => {
               onChange={handleChange}
               min="0"
               step="0.01"
+            />
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="edit-color">Polyline Color:</label>
+            <input
+              type="color"
+              id="edit-color"
+              name="color"
+              value={formData.color}
+              onChange={handleChange}
+              style={{
+                width: '100%',
+                height: '40px',
+                border: '1px solid #ccc',
+                borderRadius: '4px',
+                cursor: 'pointer'
+              }}
             />
           </div>
 
