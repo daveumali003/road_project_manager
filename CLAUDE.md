@@ -82,10 +82,15 @@ docker-compose up --build
 
 ### Frontend (React + Leaflet)
 - **Mapping**: Interactive maps with project visualization using Leaflet
-- **Components**: MapView, ProjectList, ProjectForm with geospatial data rendering
+- **Components**:
+  - `MapView`: Main map component with drawing, editing, and visualization modes
+  - `ProjectList`: Sidebar component with project cards, edit/delete buttons
+  - `ProjectForm`: Modal for creating new projects after drawing polylines
+  - `EditProjectForm`: Modal for editing existing projects with "Edit Shape" button
 - **API Integration**: Axios client with authentication interceptors and comprehensive service modules (projectService, segmentService, photoService, authService)
-- **Dependencies**: Simplified package.json without Material-UI conflicts
+- **Dependencies**: React 18, Leaflet 4.2.1, React Router 6, Axios (no Material-UI to avoid conflicts)
 - **Authentication**: Token-based auth stored in localStorage with automatic header injection
+- **Map Center**: Default location set to Mindanao, Philippines [8.2280, 124.2452]
 
 ### Android (Kotlin)
 - **Maps**: Google Maps integration for mobile field work
@@ -161,39 +166,59 @@ GitHub Actions workflow for automated testing and deployment to AWS.
 - Google Maps API key (for Android)
 - AWS account (for production deployment)
 
-## Map-Based Project Creation (NEW FEATURE)
+## Interactive Map Features (COMPLETE)
 
-### Interactive Polyline Drawing
-The application now supports creating road projects by drawing polylines directly on the map:
+### Project Creation & Management
+The application now supports comprehensive project management directly on the map:
 
-**How to Use:**
+**Map-Based Project Creation:**
 1. Click "Draw New Road Project" button in the map controls
 2. Click on the map to add points to the polyline
 3. Double-click to finish drawing
 4. Fill out the project form that appears
 5. Click "Create Project" to save
 
+**Project Editing & Management:**
+1. Click any project in the sidebar to select it
+2. Click the edit button (✎) to open the EditProjectForm modal
+3. Edit project details (name, description, status, priority, budget)
+4. Click "Edit Shape" to enter polyline vertex editing mode
+5. Use delete button (×) to remove projects with confirmation
+
+**Advanced Polyline Vertex Editing:**
+- **Drag Vertices**: Purple circle markers allow dragging to move vertices
+- **Delete Vertices**: Double-click any vertex to delete it (minimum 2 vertices required)
+- **Add Vertices**: Click anywhere on the map to add new vertices at optimal positions
+- **Visual Feedback**: Purple polyline with white-filled circle markers during editing
+- **Save/Cancel**: Map controls for saving changes or canceling edits
+
 **Technical Implementation:**
-- **Frontend**: React Leaflet with click-to-draw functionality
-- **Backend**: JSON storage of polyline coordinates in `polyline_coordinates` field
-- **Database**: SQLite with JSON field (upgradeable to PostGIS LineString)
-- **API**: RESTful endpoints for creating/retrieving projects with polylines
+- **Frontend**: React Leaflet with interactive vertex manipulation using draggable Marker components
+- **Backend**: JSON storage of polyline coordinates with full CRUD operations
+- **Database**: SQLite with JSON field storing arrays of [lat, lng] coordinates
+- **API**: RESTful endpoints with complete project lifecycle management
+- **State Management**: Complex state handling for editing modes (normal, drawing, vertex editing)
 
 **Features:**
 - Color-coded polylines by project status (planned=yellow, in_progress=green, completed=blue, on_hold=red)
-- Automatic calculation of project center point from polyline
-- Form modal for entering project details after drawing
-- Support for both point-based projects (lat/lng) and polyline projects
-- Real-time polyline preview while drawing
+- Automatic calculation of project center point from polyline vertices
+- Dual rendering support for both point-based and polyline projects
+- Real-time polyline preview during creation and editing
+- Seamless mode switching between view, create, edit, and vertex editing modes
+- Form validation and error handling with user feedback
 
 ## Current Development Status
 
-### Working POC (Proof of Concept)
+### Working MVP (Minimum Viable Product)
 - **Backend**: Django running on SQLite with simplified models ✅
 - **Frontend**: React with Leaflet maps running on localhost:3000 ✅
 - **API**: Full CRUD operations with token authentication ✅
-- **Test Data**: Sample projects created and accessible via API ✅
-- **Polyline Drawing**: Interactive map-based project creation with polylines ✅
+- **Project Creation**: Interactive map-based polyline drawing ✅
+- **Project Editing**: Complete project data editing with modal forms ✅
+- **Project Deletion**: Confirmation-based project removal ✅
+- **Polyline Vertex Editing**: Advanced geometry editing with drag/drop/add/delete ✅
+- **Map Location**: Mindanao-centered for Philippines road projects ✅
+- **Real-time Updates**: Live project visualization and state management ✅
 
 ### Testing Endpoints (POC Mode - No Authentication Required)
 ```bash
@@ -218,3 +243,32 @@ curl -H "Authorization: Token 67ef279f2525274ec5a6a6470436047824fe1ada" \
 - **Frontend**: http://localhost:3000
 - **Backend API**: http://localhost:8000/api/
 - **Django Admin**: http://localhost:8000/admin (admin/admin123)
+
+## Development Workflow
+
+### Common Development Patterns
+
+**Adding New Map Features:**
+1. Update `MapView.js` component with new state and handlers
+2. Add corresponding API endpoints in `projects/views.py`
+3. Update frontend `services/api.js` with new service methods
+4. Test with both console debugging and UI interaction
+
+**Map State Management:**
+- `editingPolyline`: Controls vertex editing mode
+- `selectedProject`: Currently selected project for highlighting
+- `drawingMode`: Controls polyline creation mode
+- State flows: Normal → Drawing → Form → Save → Normal
+- State flows: Normal → Select → Edit → (Optional) Shape Edit → Save → Normal
+
+**API Data Flow:**
+- All API calls use `projectService.update()` which requires complete project objects for PUT requests
+- Polyline coordinates stored as JSON arrays: `[[lat, lng], [lat, lng], ...]`
+- Center point automatically calculated from polyline vertices
+- Authentication handled via axios interceptors with localStorage tokens
+
+**Debugging Map Issues:**
+- Check browser console for Leaflet errors
+- Verify coordinate format: [latitude, longitude] not [lng, lat]
+- Test with `console.log()` statements in event handlers
+- Ensure proper state transitions between editing modes
