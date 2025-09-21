@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Road Project Manager</string>
+    <string name="title_map">Map</string>
+    <string name="title_projects">Projects</string>
+    <string name="title_profile">Profile</string>
+
+    <!-- Add your Google Maps API key here -->
+    <string name="google_maps_key">YOUR_GOOGLE_MAPS_API_KEY</string>
+
+    <!-- API Configuration -->
+    <string name="api_base_url">http://your-api-endpoint.com/api/</string>
+</resources>
