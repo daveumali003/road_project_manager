@@ -33,6 +33,12 @@ class RoadProject(models.Model):
     latitude = models.FloatField(null=True, blank=True, help_text="Project center latitude")
     longitude = models.FloatField(null=True, blank=True, help_text="Project center longitude")
 
+    # Polyline coordinates stored as JSON
+    polyline_coordinates = models.JSONField(null=True, blank=True, help_text="Array of [lat, lng] coordinates for the road polyline")
+
+    # Polyline color customization
+    polyline_color = models.CharField(max_length=7, default='#3388ff', help_text="Hex color code for the polyline (e.g., #ff0000)")
+
     class Meta:
         ordering = ['-created_at']
 

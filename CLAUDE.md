@@ -6,14 +6,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This is a comprehensive road project management application with a multi-platform architecture designed for managing road infrastructure projects with geospatial mapping capabilities:
 
-- **Backend**: Django REST API with dual model support (SQLite for development, PostGIS for production)
-- **Frontend**: React web application with Leaflet mapping
+- **Backend**: Django REST API with PostgreSQL database (Docker-based)
+- **Frontend**: React web application with Leaflet mapping and multi-layer GIS interface
 - **Android**: Kotlin mobile application with Google Maps
 - **Infrastructure**: AWS deployment with Docker containers
 
 ## Development Commands
 
-### Backend (Django - Currently Running on SQLite)
+### Backend (Django - Currently Running on PostgreSQL)
 ```bash
 # Activate virtual environment
 .venv\Scripts\activate  # Windows
@@ -22,21 +22,23 @@ source .venv/bin/activate  # Unix/MacOS
 # Install dependencies
 pip install -r road_project_manager/requirements.txt
 
-# Development with SQLite (current setup)
+# Start PostgreSQL database (Docker required)
+docker-compose up -d db
+
+# Current PostgreSQL setup
 cd road_project_manager/backend
-python manage.py migrate --settings=road_project_manager.settings_test
-python manage.py runserver --settings=road_project_manager.settings_test
+python manage.py migrate
+python manage.py runserver  # Runs on http://localhost:8000
 
 # Create superuser
-python manage.py createsuperuser --settings=road_project_manager.settings_test
+python manage.py createsuperuser
 
 # Run tests
-python manage.py test --settings=road_project_manager.settings_test
+python manage.py test
 
-# Production with PostGIS (switch models first)
-# Switch back to models_postgis.py, admin_postgis.py, etc.
-python manage.py migrate
-python manage.py runserver
+# Legacy SQLite setup (if needed)
+python manage.py migrate --settings=road_project_manager.settings_test
+python manage.py runserver --settings=road_project_manager.settings_test
 ```
 
 ### Frontend (React)
@@ -50,14 +52,25 @@ npm test  # Run tests
 # Note: Package.json includes proxy to localhost:8000 for backend API
 ```
 
-### Full Stack with Docker
+### Full Stack Development
 ```bash
-# Start all services (PostgreSQL, Django, React)
-docker-compose up --build
+# Start PostgreSQL database only (recommended for development)
+docker-compose up -d db
 
-# Backend: http://localhost:8000
+# Start backend and frontend separately (in different terminals)
+# Terminal 1: Backend
+cd road_project_manager/backend && python manage.py runserver
+
+# Terminal 2: Frontend
+cd road_project_manager/frontend && npm start
+
+# Access points:
 # Frontend: http://localhost:3000
-# Admin: http://localhost:8000/admin
+# Backend API: http://localhost:8000/api/
+# Django Admin: http://localhost:8000/admin (admin/admin)
+
+# Alternative: Start all services with Docker (optional)
+docker-compose up --build
 ```
 
 ### Android Development
@@ -68,16 +81,20 @@ docker-compose up --build
 ## Project Architecture
 
 ### Backend (Django REST API)
+- **Database**: PostgreSQL running in Docker container (postgis/postgis:15-3.3)
 - **Models**: RoadProject, RoadSegment, ProjectPhoto, ProjectUpdate
-- **Dual Model Support**:
-  - Simple models (`models.py`) with lat/lng coordinates for development/testing
-  - PostGIS models (`models_postgis.py`) with full geometric support for production
+- **Current Setup**: Regular PostgreSQL with JSON coordinates (PostGIS capabilities commented out)
+- **Model Features**:
+  - JSON polyline coordinates: `[[lat, lng], [lat, lng], ...]`
+  - Custom polyline colors with hex codes
+  - Standard lat/lng fields for compatibility
+  - Future PostGIS fields available but commented out
 - **Settings**:
-  - `settings_test.py` for SQLite development
-  - `settings.py` for PostGIS production
+  - `settings.py` for PostgreSQL production (current)
+  - `settings_test.py` for SQLite development (legacy)
 - **API**: RESTful endpoints with geographic data support and custom actions (nearby, segments, photos)
-- **Authentication**: Token-based authentication (requires `rest_framework.authtoken` in INSTALLED_APPS) with POC fallback to auto-create 'poc_user' for unauthenticated requests
-- **Admin**: Dual admin support (simple vs PostGIS with map widgets)
+- **Authentication**: Token-based authentication with POC fallback to auto-create 'poc_user'
+- **Admin**: Standard Django admin interface (PostGIS widgets commented out)
 - **Permissions**: Currently `AllowAny` for POC testing
 
 ### Frontend (React + Leaflet)
@@ -114,20 +131,22 @@ docker-compose up --build
 
 ## Database Models
 
-### Current Implementation (SQLite with Simple Coordinates)
+### Current Implementation (PostgreSQL with JSON Coordinates)
 - **RoadProject**: Main project entity with:
   - `latitude`/`longitude` fields for project center point
   - `polyline_coordinates` JSON field storing road polylines as arrays of [lat, lng] points
   - `polyline_color` CharField storing hex color codes (e.g., '#3388ff') for custom polyline colors
   - Standard project fields (name, description, status, priority, budget, dates)
-- **RoadSegment**: Individual road sections with start/end lat/lng coordinates
-- **ProjectPhoto**: Geotagged images with `latitude`/`longitude` fields
+  - Future PostGIS fields commented out (project_area PolygonField)
+- **RoadSegment**: Individual road sections with standard fields (PostGIS centerline commented out)
+- **ProjectPhoto**: Geotagged images with `latitude`/`longitude` fields (PostGIS location commented out)
 - **ProjectUpdate**: Progress updates and communications
 
-### Production Implementation (PostGIS - Available in *_postgis.py files)
-- **RoadProject**: Uses `PolygonField` for project areas
-- **RoadSegment**: Uses `LineStringField` for road centerlines
-- **ProjectPhoto**: Uses `PointField` for precise geotagging
+### Future PostGIS Implementation (Available but commented out)
+- **RoadProject**: `PolygonField` for project areas (requires GDAL setup)
+- **RoadSegment**: `LineStringField` for road centerlines
+- **ProjectPhoto**: `PointField` for precise geotagging
+- **Note**: PostGIS features disabled due to Windows GDAL library requirements
 
 ## Deployment
 
@@ -138,24 +157,53 @@ docker-compose up --build
 - **ALB**: Load balancer with SSL termination
 
 ### Local Development
-Current setup uses SQLite for rapid development. For PostGIS testing, use Docker Compose.
+Current setup uses PostgreSQL with Docker for development. SQLite setup available as legacy fallback.
 
-### Model Switching Guide
-To switch between SQLite and PostGIS models:
+### Database Setup Guide
 ```bash
-# Switch to PostGIS
-cd road_project_manager/backend/projects
-cp models.py models_simple.py  # backup current
-cp models_postgis.py models.py
-cp admin_postgis.py admin.py
-cp serializers_postgis.py serializers.py
-cp views_postgis.py views.py
+# Current PostgreSQL setup (recommended)
+docker-compose up -d db  # Start PostgreSQL container
+cd road_project_manager/backend
+python manage.py migrate
+python manage.py runserver
 
-# Switch back to SQLite
-cp models_simple.py models.py
-cp admin_simple.py admin.py
-# Update settings to use settings_test.py
+# Legacy SQLite setup (if needed)
+python manage.py migrate --settings=road_project_manager.settings_test
+python manage.py runserver --settings=road_project_manager.settings_test
+
+# Switch between databases by changing Django settings file
 ```
+
+### Docker Data Management
+```bash
+# Check database status
+docker-compose ps
+
+# View database logs
+docker-compose logs db
+
+# Connect to PostgreSQL directly
+docker-compose exec db psql -U postgres -d road_projects
+
+# Backup database
+docker-compose exec db pg_dump -U postgres road_projects > backup.sql
+
+# Restore database
+docker-compose exec -T db psql -U postgres road_projects < backup.sql
+
+# Reset database (CAUTION: Deletes all data)
+docker-compose down -v  # Removes volumes
+docker-compose up -d db
+cd road_project_manager/backend && python manage.py migrate
+```
+
+### PostGIS Upgrade Path (Future)
+To enable full PostGIS features:
+1. Install GDAL libraries on the system
+2. Uncomment PostGIS fields in models.py
+3. Uncomment `django.contrib.gis` and `rest_framework_gis` in settings
+4. Update serializers to use GeoFeatureModelSerializer
+5. Run new migrations for geometric fields
 
 ### CI/CD
 GitHub Actions workflow for automated testing and deployment to AWS.
@@ -266,16 +314,17 @@ curl -X POST -H "Content-Type: application/json" \
 # Test nearby projects
 curl "http://localhost:8000/api/projects/nearby/?lat=40.7&lng=-73.9&radius=50"
 
-# For authenticated testing (admin/admin123)
-# Token: 67ef279f2525274ec5a6a6470436047824fe1ada
-curl -H "Authorization: Token 67ef279f2525274ec5a6a6470436047824fe1ada" \
+# For authenticated testing (admin/admin)
+# Note: Generate new token after creating superuser
+# python manage.py shell -c "from django.contrib.auth.models import User; from rest_framework.authtoken.models import Token; user = User.objects.get(username='admin'); token, created = Token.objects.get_or_create(user=user); print(f'Token: {token.key}')"
+curl -H "Authorization: Token YOUR_TOKEN_HERE" \
   "http://localhost:8000/api/projects/"
 ```
 
 ### Access Points
 - **Frontend**: http://localhost:3000
 - **Backend API**: http://localhost:8000/api/
-- **Django Admin**: http://localhost:8000/admin (admin/admin123)
+- **Django Admin**: http://localhost:8000/admin (admin/admin)
 
 ## Development Workflow
 
@@ -317,3 +366,38 @@ curl -H "Authorization: Token 67ef279f2525274ec5a6a6470436047824fe1ada" \
 - Monitor React key changes for polyline re-rendering (includes color in key)
 - Test with `console.log()` statements in event handlers
 - Ensure proper state transitions between editing modes
+
+## Troubleshooting
+
+### Common Issues
+
+**Database Connection Errors:**
+```bash
+# Check if PostgreSQL container is running
+docker-compose ps
+
+# Restart database if needed
+docker-compose restart db
+
+# Check database logs for errors
+docker-compose logs db
+```
+
+**Frontend/Backend Communication:**
+```bash
+# Test API connectivity
+curl http://localhost:8000/api/projects/
+
+# Check if backend is running
+# Should see Django development server output
+```
+
+**PostGIS/GDAL Errors:**
+- PostGIS features are currently commented out due to Windows GDAL requirements
+- Use standard PostgreSQL setup (current configuration)
+- For PostGIS: Install OSGeo4W or conda-forge gdal package
+
+**Port Conflicts:**
+- Backend: Change port in `python manage.py runserver 8001`
+- Frontend: Set `PORT=3001` environment variable for React
+- Database: Modify `docker-compose.yml` port mapping

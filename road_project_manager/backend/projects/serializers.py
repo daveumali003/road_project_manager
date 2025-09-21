@@ -10,9 +10,9 @@ class RoadProjectSerializer(serializers.ModelSerializer):
         model = RoadProject
         fields = [
             'id', 'name', 'description', 'status', 'priority', 'budget',
-            'start_date', 'end_date', 'latitude', 'longitude', 'polyline_coordinates',
-            'polyline_color', 'created_at', 'updated_at', 'created_by', 'created_by_name',
-            'assigned_to', 'assigned_to_names'
+            'start_date', 'end_date', 'created_at', 'updated_at',
+            'created_by', 'created_by_name', 'assigned_to', 'assigned_to_names',
+            'latitude', 'longitude', 'polyline_coordinates', 'polyline_color'
         ]
         read_only_fields = ['created_by', 'created_at', 'updated_at']
 
@@ -22,8 +22,7 @@ class RoadSegmentSerializer(serializers.ModelSerializer):
         model = RoadSegment
         fields = [
             'id', 'project', 'name', 'road_type', 'surface_type',
-            'length_km', 'width_m', 'start_latitude', 'start_longitude',
-            'end_latitude', 'end_longitude', 'created_at', 'updated_at'
+            'length_km', 'width_m', 'created_at', 'updated_at'
         ]
         read_only_fields = ['created_at', 'updated_at']
 

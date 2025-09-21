@@ -2,7 +2,12 @@
   "permissions": {
     "allow": [
       "Bash(cat:*)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Bash(set DB_HOST=localhost)",
+      "Bash(set DB_NAME=road_projects)",
+      "Bash(set DB_USER=postgres)",
+      "Bash(set DB_PASSWORD=postgres)",
+      "Bash(python manage.py:*)"
     ],
     "deny": [],
     "ask": []

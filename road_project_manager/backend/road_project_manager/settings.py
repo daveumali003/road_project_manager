@@ -29,9 +29,9 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'django.contrib.gis',  # PostGIS support
+    # 'django.contrib.gis',  # PostGIS support (commented out for now)
     'rest_framework',
-    'rest_framework_gis',
+    # 'rest_framework_gis',  # PostGIS support (commented out for now)
     'corsheaders',
     'storages',
     'projects',  # Our main app
@@ -72,10 +72,10 @@ WSGI_APPLICATION = 'road_project_manager.wsgi.application'
 # Database with PostGIS
 DATABASES = {
     'default': {
-        'ENGINE': 'django.contrib.gis.db.backends.postgis',
+        'ENGINE': 'django.db.backends.postgresql',
         'NAME': env('DB_NAME', default='road_projects'),
         'USER': env('DB_USER', default='postgres'),
-        'PASSWORD': env('DB_PASSWORD', default=''),
+        'PASSWORD': env('DB_PASSWORD', default='postgres'),
         'HOST': env('DB_HOST', default='localhost'),
         'PORT': env('DB_PORT', default='5432'),
     }

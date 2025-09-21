@@ -21,11 +21,12 @@ A comprehensive multi-layer GIS web application for managing road infrastructure
 
 - Python 3.11+
 - Node.js 18+
-- SQLite (included with Python, for development)
-- PostgreSQL with PostGIS extension (for production)
-- Docker (optional, for PostGIS setup)
+- Docker Desktop (for PostgreSQL database)
+- Git (for version control)
 
-### Option 1: Development Setup (Current - SQLite)
+### Development Setup (Current - PostgreSQL)
+
+**First-time setup:**
 
 ```bash
 # Activate virtual environment
@@ -35,47 +36,65 @@ source .venv/bin/activate  # Unix/MacOS
 # Install dependencies
 pip install -r road_project_manager/requirements.txt
 
-# Backend setup with SQLite
+# Start PostgreSQL database with Docker
+docker-compose up -d db
+
+# Backend setup
 cd road_project_manager/backend
-python manage.py migrate --settings=road_project_manager.settings_test
-python manage.py createsuperuser --settings=road_project_manager.settings_test
-python manage.py runserver --settings=road_project_manager.settings_test
+python manage.py migrate
+python manage.py createsuperuser  # Create admin account
+python manage.py runserver  # Terminal 1
 
 # Frontend setup (in new terminal)
 cd road_project_manager/frontend
 npm install
-npm start
+npm start  # Terminal 2
 
 # Access the application
 # Frontend: http://localhost:3000
 # Backend API: http://localhost:8000/api/
-# Django Admin: http://localhost:8000/admin (admin/admin123)
+# Django Admin: http://localhost:8000/admin
 ```
 
-### Option 2: Production Setup (PostGIS)
+### Quick Start After PC Restart
+
+**Daily startup steps:**
 
 ```bash
-# Switch to PostGIS models first
-cd road_project_manager/backend/projects
-cp models.py models_simple.py  # backup
-cp models_postgis.py models.py
-cp admin_postgis.py admin.py
+# 1. Start Docker Desktop (from Windows Start menu)
 
-# Setup environment
-cp road_project_manager/backend/.env.example road_project_manager/backend/.env
-# Edit .env with your PostgreSQL credentials
+# 2. Navigate to project and activate virtual environment
+cd "path\to\your\project"
+.venv\Scripts\activate
 
-# Run migrations and start server
-cd road_project_manager/backend
-python manage.py migrate
-python manage.py createsuperuser
+# 3. Start PostgreSQL database
+docker-compose up -d db
+
+# 4. Start backend server (Terminal 1)
+cd road_project_manager\backend
 python manage.py runserver
+
+# 5. Start frontend server (Terminal 2)
+cd road_project_manager\frontend
+npm start
+
+# Your app is now running with all data preserved!
 ```
 
-### Option 3: Docker Compose (For PostGIS Testing)
+### Alternative: One-Command Startup
 
 ```bash
-docker-compose up --build
+# Start everything at once (all services in one terminal)
+docker-compose up
+```
+
+### Legacy SQLite Setup (If Needed)
+
+```bash
+# Fallback option using SQLite instead of PostgreSQL
+cd road_project_manager/backend
+python manage.py migrate --settings=road_project_manager.settings_test
+python manage.py runserver --settings=road_project_manager.settings_test
 ```
 
 
