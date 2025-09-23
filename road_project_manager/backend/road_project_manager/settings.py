@@ -29,10 +29,10 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    # 'django.contrib.gis',  # PostGIS support (commented out for now)
+    # 'django.contrib.gis',  # PostGIS support (requires GDAL)
     'rest_framework',
     'rest_framework.authtoken',  # Token authentication
-    # 'rest_framework_gis',  # PostGIS support (commented out for now)
+    # 'rest_framework_gis',  # PostGIS support (requires GDAL)
     'corsheaders',
     'storages',
     'projects',  # Our main app

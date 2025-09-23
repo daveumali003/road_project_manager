@@ -29,11 +29,14 @@ class RoadProject(models.Model):
     created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='created_projects')
     assigned_to = models.ManyToManyField(User, blank=True, related_name='assigned_projects')
 
-    # Simple location fields instead of PostGIS
+    # Future: Geospatial field for project area (requires PostGIS setup)
+    # project_area = models.PolygonField(null=True, blank=True, help_text="Project boundary polygon")
+
+    # Simple location fields for compatibility
     latitude = models.FloatField(null=True, blank=True, help_text="Project center latitude")
     longitude = models.FloatField(null=True, blank=True, help_text="Project center longitude")
 
-    # Polyline coordinates stored as JSON
+    # Polyline coordinates stored as JSON for frontend compatibility
     polyline_coordinates = models.JSONField(null=True, blank=True, help_text="Array of [lat, lng] coordinates for the road polyline")
 
     # Polyline color customization
@@ -68,11 +71,8 @@ class RoadSegment(models.Model):
     length_km = models.FloatField(help_text="Length in kilometers")
     width_m = models.FloatField(help_text="Width in meters")
 
-    # Simple start/end coordinates instead of PostGIS LineString
-    start_latitude = models.FloatField(help_text="Start point latitude")
-    start_longitude = models.FloatField(help_text="Start point longitude")
-    end_latitude = models.FloatField(help_text="End point latitude")
-    end_longitude = models.FloatField(help_text="End point longitude")
+    # Future: Geospatial field for road centerline (requires PostGIS setup)
+    # centerline = models.LineStringField(help_text="Road centerline geometry")
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -89,11 +89,10 @@ class ProjectPhoto(models.Model):
     title = models.CharField(max_length=200)
     description = models.TextField(blank=True)
     image = models.ImageField(upload_to='project_photos/')
-
-    # Simple coordinates instead of PostGIS Point
+    # Future: Geospatial field for photo location (requires PostGIS setup)
+    # location = models.PointField(null=True, blank=True, help_text="Photo location")
     latitude = models.FloatField(null=True, blank=True, help_text="Photo latitude")
     longitude = models.FloatField(null=True, blank=True, help_text="Photo longitude")
-
     taken_at = models.DateTimeField(auto_now_add=True)
     uploaded_by = models.ForeignKey(User, on_delete=models.CASCADE)
 
