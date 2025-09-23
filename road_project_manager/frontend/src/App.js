@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import './App.css';
 import MapView from './components/MapView';
 import EditProjectForm from './components/EditProjectForm';
 import ProjectPreview from './components/ProjectPreview';
 import LayerControl from './components/LayerControl';
 import DataTable from './components/DataTable';
-import { projectService } from './services/api';
+import Login from './components/Login';
+import { projectService, authService } from './services/api';
 
 function App() {
   const [projects, setProjects] = useState([]);
@@ -14,6 +15,8 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [editingProject, setEditingProject] = useState(null);
   const [editingPolyline, setEditingPolyline] = useState(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [authLoading, setAuthLoading] = useState(true);
   const [layers, setLayers] = useState([
     {
       id: 'road_projects',
@@ -27,8 +30,22 @@ function App() {
   const [startDrawing, setStartDrawing] = useState(false);
 
   useEffect(() => {
-    loadProjects();
+    checkAuthentication();
   }, []);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      loadProjects();
+    }
+  }, [isAuthenticated]);
+
+  const checkAuthentication = () => {
+    const token = localStorage.getItem('authToken');
+    if (token) {
+      setIsAuthenticated(true);
+    }
+    setAuthLoading(false);
+  };
 
   const loadProjects = async () => {
     try {
@@ -216,30 +233,74 @@ function App() {
     }
   };
 
+  const handleLoginSuccess = (userData) => {
+    setIsAuthenticated(true);
+  };
+
+  const handleLogout = () => {
+    authService.logout();
+    setIsAuthenticated(false);
+    setProjects([]);
+    setSelectedProject(null);
+    setEditingProject(null);
+    setEditingPolyline(null);
+    setActiveTable(null);
+  };
+
+  // Show loading spinner while checking authentication
+  if (authLoading) {
+    return (
+      <div className="app-loading">
+        <div>Loading...</div>
+      </div>
+    );
+  }
+
   return (
     <Router>
       <div className="App">
         <Routes>
+          <Route path="/login" element={
+            !isAuthenticated ? (
+              <Login onLoginSuccess={handleLoginSuccess} />
+            ) : (
+              <Navigate to="/" replace />
+            )
+          } />
           <Route path="/" element={
-            <div className="app-container">
-              <MapView
-                projects={layers.find(l => l.id === 'road_projects')?.visible ? projects : []}
-                selectedProject={selectedProject}
-                onProjectSelect={handleProjectSelect}
-                onProjectCreate={handleProjectCreate}
-                editingPolyline={editingPolyline}
-                onPolylineEdit={handlePolylineEdit}
-                startDrawing={startDrawing}
-              />
+            isAuthenticated ? (
+              <div className="app-container">
+                {/* Navigation Header */}
+                <div className="app-header">
+                  <h1>Road Project Manager</h1>
+                  <button onClick={handleLogout} className="logout-button">
+                    Logout
+                  </button>
+                </div>
 
-              {/* Layer Control */}
-              <LayerControl
-                layers={layers}
-                onLayerToggle={handleLayerToggle}
-                onShowTable={handleShowTable}
-                onCreateNew={handleCreateNew}
-              />
-            </div>
+                <div className="app-main">
+                  <MapView
+                    projects={layers.find(l => l.id === 'road_projects')?.visible ? projects : []}
+                    selectedProject={selectedProject}
+                    onProjectSelect={handleProjectSelect}
+                    onProjectCreate={handleProjectCreate}
+                    editingPolyline={editingPolyline}
+                    onPolylineEdit={handlePolylineEdit}
+                    startDrawing={startDrawing}
+                  />
+                </div>
+
+                {/* Layer Control */}
+                <LayerControl
+                  layers={layers}
+                  onLayerToggle={handleLayerToggle}
+                  onShowTable={handleShowTable}
+                  onCreateNew={handleCreateNew}
+                />
+              </div>
+            ) : (
+              <Navigate to="/login" replace />
+            )
           } />
         </Routes>
 

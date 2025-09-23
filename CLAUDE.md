@@ -93,7 +93,7 @@ docker-compose up --build
   - `settings.py` for PostgreSQL production (current)
   - `settings_test.py` for SQLite development (legacy)
 - **API**: RESTful endpoints with geographic data support and custom actions (nearby, segments, photos)
-- **Authentication**: Token-based authentication with POC fallback to auto-create 'poc_user'
+- **Authentication**: Token-based authentication with login endpoint (`/api/auth/login/`) and full login page
 - **Admin**: Standard Django admin interface (PostGIS widgets commented out)
 - **Permissions**: Currently `AllowAny` for POC testing
 
@@ -110,7 +110,7 @@ docker-compose up --build
 - **User Interface**: Multi-layer GIS-like interface with layer controls on left, drawing controls on right when active
 - **API Integration**: Axios client with authentication interceptors and comprehensive service modules (projectService, segmentService, photoService, authService)
 - **Dependencies**: React 18, Leaflet 4.2.1, React Router 6, Axios (no Material-UI to avoid conflicts)
-- **Authentication**: Token-based auth stored in localStorage with automatic header injection
+- **Authentication**: Full login page with token-based auth stored in localStorage and automatic header injection
 - **Map Center**: Default location set to Mindanao, Philippines [8.2280, 124.2452]
 
 ### Android (Kotlin)
@@ -301,30 +301,50 @@ The application features a comprehensive multi-layer GIS-like interface:
 - **Map Location**: Mindanao-centered for Philippines road projects ✅
 - **Real-time Updates**: Live project visualization and state management across all interfaces ✅
 
-### Testing Endpoints (POC Mode - No Authentication Required)
+### Testing Endpoints and Authentication
+
+#### Login via API
 ```bash
-# List all projects (unauthenticated for POC)
-curl "http://localhost:8000/api/projects/"
+# Login to get authentication token
+curl -X POST -H "Content-Type: application/json" \
+  -d '{"username": "dave", "password": "admin123"}' \
+  http://localhost:8000/api/auth/login/
+
+# Expected response:
+# {"token": "32bc09e58f9a29e022b3bf126e5bf122adbf70cd", "user_id": 1, "username": "dave", ...}
+```
+
+#### Test Project Endpoints
+```bash
+# List all projects (authentication required)
+curl -H "Authorization: Token YOUR_TOKEN_HERE" \
+  "http://localhost:8000/api/projects/"
 
 # Create new project with polyline and custom color
 curl -X POST -H "Content-Type: application/json" \
+  -H "Authorization: Token YOUR_TOKEN_HERE" \
   -d '{"name": "Test Road", "status": "planned", "latitude": 40.7, "longitude": -73.9, "polyline_coordinates": [[40.7128, -74.0060], [40.7130, -74.0065]], "polyline_color": "#ff5733"}' \
   "http://localhost:8000/api/projects/"
 
 # Test nearby projects
-curl "http://localhost:8000/api/projects/nearby/?lat=40.7&lng=-73.9&radius=50"
-
-# For authenticated testing (admin/admin)
-# Note: Generate new token after creating superuser
-# python manage.py shell -c "from django.contrib.auth.models import User; from rest_framework.authtoken.models import Token; user = User.objects.get(username='admin'); token, created = Token.objects.get_or_create(user=user); print(f'Token: {token.key}')"
 curl -H "Authorization: Token YOUR_TOKEN_HERE" \
-  "http://localhost:8000/api/projects/"
+  "http://localhost:8000/api/projects/nearby/?lat=40.7&lng=-73.9&radius=50"
+
+# Get user profile
+curl -H "Authorization: Token YOUR_TOKEN_HERE" \
+  "http://localhost:8000/api/auth/user/"
 ```
 
+#### Default Credentials
+- **Username**: `dave`
+- **Password**: `admin123`
+- **Note**: Use the login page at http://localhost:3000/login or create your own user via Django admin
+
 ### Access Points
-- **Frontend**: http://localhost:3000
+- **Frontend**: http://localhost:3000 (redirects to login if not authenticated)
+- **Login Page**: http://localhost:3000/login
 - **Backend API**: http://localhost:8000/api/
-- **Django Admin**: http://localhost:8000/admin (admin/admin)
+- **Django Admin**: http://localhost:8000/admin (use dave/admin123)
 
 ## Development Workflow
 

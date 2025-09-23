@@ -1,6 +1,9 @@
 from rest_framework import viewsets, permissions, status
-from rest_framework.decorators import action
+from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.response import Response
+from rest_framework.authtoken.models import Token
+from django.contrib.auth import authenticate
+from django.contrib.auth.models import User
 from django_filters.rest_framework import DjangoFilterBackend
 from .models import RoadProject, RoadSegment, ProjectPhoto, ProjectUpdate
 from .serializers import (
@@ -112,3 +115,76 @@ class ProjectUpdateViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(created_by=self.request.user)
+
+
+# Authentication Views
+@api_view(['POST'])
+@permission_classes([permissions.AllowAny])
+def login_view(request):
+    """
+    Login endpoint that returns an authentication token
+    """
+    username = request.data.get('username')
+    password = request.data.get('password')
+    
+    if not username or not password:
+        return Response(
+            {'error': 'Username and password are required'}, 
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    
+    user = authenticate(username=username, password=password)
+    
+    if user is not None:
+        if user.is_active:
+            token, created = Token.objects.get_or_create(user=user)
+            return Response({
+                'token': token.key,
+                'user_id': user.id,
+                'username': user.username,
+                'email': user.email,
+                'first_name': user.first_name,
+                'last_name': user.last_name,
+            })
+        else:
+            return Response(
+                {'error': 'Account is disabled'}, 
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+    else:
+        return Response(
+            {'error': 'Invalid username or password'}, 
+            status=status.HTTP_401_UNAUTHORIZED
+        )
+
+
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+def logout_view(request):
+    """
+    Logout endpoint that deletes the authentication token
+    """
+    try:
+        request.user.auth_token.delete()
+        return Response({'message': 'Successfully logged out'})
+    except:
+        return Response({'message': 'Already logged out'})
+
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def user_profile_view(request):
+    """
+    Get current user profile information
+    """
+    user = request.user
+    return Response({
+        'user_id': user.id,
+        'username': user.username,
+        'email': user.email,
+        'first_name': user.first_name,
+        'last_name': user.last_name,
+        'is_staff': user.is_staff,
+        'is_superuser': user.is_superuser,
+        'date_joined': user.date_joined,
+    })
