@@ -9,10 +9,12 @@ A comprehensive multi-layer GIS web application for managing road infrastructure
 - 🎨 **Custom Polyline Colors** - Visual project differentiation with user-selectable color schemes
 - 📊 **Interactive Data Tables** - Sortable bottom-positioned tables with real-time updates and CRUD operations
 - 🖱️ **Click-to-Preview System** - Clean map-first UI with popup project details and actions
+- 🔐 **Authentication System** - Secure login with token-based authentication and user management
 - 📱 **Mobile Companion App** - Android app for field data collection
-- 🗃️ **PostGIS Integration** - Store and query geospatial road project data with dual model support
+- 🗃️ **PostGIS Integration** - Native PostGIS geometries for professional GIS workflows and QGIS integration
 - 📈 **Real-time Project Management** - Track status, budgets, timelines, and progress with immediate updates
 - 📸 **Geotagged Photos** - Document projects with location-aware imagery
+- 🌐 **QGIS Compatible** - Direct database access with proper spatial geometries
 - ☁️ **AWS Ready** - Production deployment on AWS with Docker
 
 ## Quick Start
@@ -21,10 +23,15 @@ A comprehensive multi-layer GIS web application for managing road infrastructure
 
 - Python 3.11+
 - Node.js 18+
-- Docker Desktop (for PostgreSQL database)
+- Docker Desktop (for PostGIS database)
 - Git (for version control)
+- GDAL libraries (for PostGIS support):
+  - **Windows**: Install OSGeo4W or use conda: `conda install -c conda-forge gdal`
+  - **macOS**: `brew install gdal`
+  - **Linux**: `sudo apt-get install gdal-bin libgdal-dev` (Ubuntu/Debian)
+  - **Docker**: Already included in PostGIS container
 
-### Development Setup (Current - PostgreSQL)
+### Development Setup (PostGIS + Authentication)
 
 **First-time setup:**
 
@@ -36,13 +43,32 @@ source .venv/bin/activate  # Unix/MacOS
 # Install dependencies
 pip install -r road_project_manager/requirements.txt
 
-# Start PostgreSQL database with Docker
+# Start PostGIS database with Docker
 docker-compose up -d db
 
 # Backend setup
 cd road_project_manager/backend
 python manage.py migrate
 python manage.py createsuperuser  # Create admin account
+
+# Create geometry views for QGIS integration
+docker-compose exec db psql -U postgres -d road_projects -c "
+CREATE OR REPLACE VIEW projects_roadproject_points AS
+SELECT id, name, description, status, priority, budget, start_date, end_date,
+       created_at, updated_at, created_by_id, polyline_color,
+       ST_SetSRID(ST_MakePoint(longitude, latitude), 4326) AS geom
+FROM projects_roadproject WHERE latitude IS NOT NULL AND longitude IS NOT NULL;
+
+CREATE OR REPLACE VIEW projects_roadproject_polylines AS
+SELECT id, name, description, status, priority, budget, start_date, end_date,
+       created_at, updated_at, created_by_id, polyline_color,
+       ST_SetSRID(ST_MakeLine(ARRAY(
+           SELECT ST_MakePoint((coord->>1)::float, (coord->>0)::float)
+           FROM jsonb_array_elements(polyline_coordinates) AS coord
+       )), 4326) AS geom
+FROM projects_roadproject
+WHERE polyline_coordinates IS NOT NULL AND jsonb_array_length(polyline_coordinates) >= 2;"
+
 python manage.py runserver  # Terminal 1
 
 # Frontend setup (in new terminal)
@@ -51,10 +77,15 @@ npm install
 npm start  # Terminal 2
 
 # Access the application
-# Frontend: http://localhost:3000
+# Frontend: http://localhost:3000 (redirects to login)
+# Login Page: http://localhost:3000/login
 # Backend API: http://localhost:8000/api/
 # Django Admin: http://localhost:8000/admin
 ```
+
+**Default Login Credentials:**
+- Username: `dave`
+- Password: `admin123`
 
 ### Quick Start After PC Restart
 
@@ -102,17 +133,17 @@ python manage.py runserver --settings=road_project_manager.settings_test
 
 ```
 road_project_manager/
-├── backend/                 # Django REST API with dual model support
-│   ├── projects/           # Main app with geospatial models (SQLite + PostGIS)
-│   │   ├── models.py       # Currently active SQLite models
-│   │   ├── models_postgis.py # Production PostGIS models
-│   │   ├── serializers.py  # REST API serializers
-│   │   ├── views.py        # API endpoints with geographic features
-│   │   └── admin.py        # Admin interface with map widgets
+├── backend/                 # Django REST API with PostGIS support
+│   ├── projects/           # Main app with geospatial models and authentication
+│   │   ├── models.py       # PostGIS models with geometry fields
+│   │   ├── models_simple.py # Backup simple models (JSON coordinates)
+│   │   ├── serializers.py  # REST API serializers with GIS support
+│   │   ├── views.py        # API endpoints with authentication & geographic features
+│   │   └── admin.py        # Admin interface with PostGIS widgets
 │   ├── road_project_manager/  # Django settings
-│   │   ├── settings.py     # PostGIS production settings
-│   │   └── settings_test.py # SQLite development settings
-│   └── requirements.txt    # Python dependencies
+│   │   ├── settings.py     # PostGIS production settings (default)
+│   │   └── settings_test.py # SQLite fallback settings
+│   └── requirements.txt    # Python dependencies with PostGIS
 ├── frontend/               # React web application with Leaflet
 │   ├── src/
 │   │   ├── components/     # React components
@@ -211,42 +242,74 @@ Required AWS services:
 - **S3**: Static file storage
 - **ALB**: Load balancer
 
+## QGIS Integration
+
+The application provides native PostGIS integration for professional GIS workflows:
+
+### Database Connection in QGIS
+```
+Connection Type: PostgreSQL
+Host: localhost
+Port: 5432
+Database: road_projects
+Username: postgres
+Password: postgres
+```
+
+### Available Spatial Layers
+- **`projects_roadproject_points`** - Project center points with all attributes
+- **`projects_roadproject_polylines`** - Road polylines with custom colors and project data
+- **`projects_projectphoto_points`** - Geotagged photo locations
+
+### QGIS Styling
+- Use the `polyline_color` field for color-based styling
+- Style by `status` (planned, in_progress, completed, on_hold)
+- Style by `priority` (low, medium, high, critical)
+- All project attributes available for labels and popups
+
 ## API Documentation
 
 The Django REST API provides endpoints for:
 
+- `/api/auth/login/` - Authentication (get token)
+- `/api/auth/logout/` - Logout (delete token)
+- `/api/auth/user/` - User profile information
 - `/api/projects/` - CRUD operations for road projects
 - `/api/segments/` - Road segment management
 - `/api/photos/` - Project photo uploads
 - `/api/updates/` - Project status updates
 
-### Testing the API
+### Authentication and Testing
 
 ```bash
-# Get authentication token (admin/admin123)
-# Current token: 67ef279f2525274ec5a6a6470436047824fe1ada
+# Login to get authentication token
+curl -X POST -H "Content-Type: application/json" \
+  -d '{"username": "dave", "password": "admin123"}' \
+  http://localhost:8000/api/auth/login/
 
-# List all projects
-curl -H "Authorization: Token 67ef279f2525274ec5a6a6470436047824fe1ada" \
+# Expected response:
+# {"token": "32bc09e58f9a29e022b3bf126e5bf122adbf70cd", "user_id": 1, "username": "dave", ...}
+
+# List all projects (authentication required)
+curl -H "Authorization: Token YOUR_TOKEN_HERE" \
   "http://localhost:8000/api/projects/"
 
 # Create a new project with polyline and custom color
-curl -X POST -H "Authorization: Token 67ef279f2525274ec5a6a6470436047824fe1ada" \
+curl -X POST -H "Authorization: Token YOUR_TOKEN_HERE" \
   -H "Content-Type: application/json" \
   -d '{"name": "Test Project", "status": "planned", "latitude": 40.7, "longitude": -73.9, "polyline_coordinates": [[40.7128, -74.0060], [40.7130, -74.0065]], "polyline_color": "#ff5733"}' \
   "http://localhost:8000/api/projects/"
 
-# Find nearby projects
-curl -H "Authorization: Token 67ef279f2525274ec5a6a6470436047824fe1ada" \
-  "http://localhost:8000/api/projects/nearby/?lat=40.7&lng=-73.9&radius=50"
+# Get user profile
+curl -H "Authorization: Token YOUR_TOKEN_HERE" \
+  "http://localhost:8000/api/auth/user/"
 ```
 
-Current implementation supports:
-- Simple lat/lng coordinates for project centers
-- JSON arrays for polyline coordinates: `[[lat, lng], [lat, lng], ...]`
-- Custom polyline colors as hex strings: `#ff5733`
-- Real-time updates and advanced vertex editing
-- Production version supports full GeoJSON format with PostGIS
+### Data Format
+- **Polyline coordinates**: JSON arrays `[[lat, lng], [lat, lng], ...]`
+- **Colors**: Hex strings `#ff5733`
+- **Geometries**: PostGIS geometries in database views
+- **Real-time updates**: Changes sync between web app and QGIS
 
 ## Mobile App Setup
 

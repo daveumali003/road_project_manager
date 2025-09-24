@@ -6,14 +6,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This is a comprehensive road project management application with a multi-platform architecture designed for managing road infrastructure projects with geospatial mapping capabilities:
 
-- **Backend**: Django REST API with PostgreSQL database (Docker-based)
+- **Backend**: Django REST API with PostGIS database (Docker-based) using hybrid JSON + PostGIS geometry approach
 - **Frontend**: React web application with Leaflet mapping and multi-layer GIS interface
 - **Android**: Kotlin mobile application with Google Maps
+- **GIS Integration**: PostGIS spatial views for QGIS compatibility without GDAL dependency
 - **Infrastructure**: AWS deployment with Docker containers
 
 ## Development Commands
 
-### Backend (Django - Currently Running on PostgreSQL)
+### Backend (Django with PostGIS)
 ```bash
 # Activate virtual environment
 .venv\Scripts\activate  # Windows
@@ -22,13 +23,31 @@ source .venv/bin/activate  # Unix/MacOS
 # Install dependencies
 pip install -r road_project_manager/requirements.txt
 
-# Start PostgreSQL database (Docker required)
+# Start PostGIS database (Docker required)
 docker-compose up -d db
 
-# Current PostgreSQL setup
+# Backend setup with PostGIS integration
 cd road_project_manager/backend
 python manage.py migrate
 python manage.py runserver  # Runs on http://localhost:8000
+
+# Create PostGIS geometry views for QGIS integration
+docker-compose exec db psql -U postgres -d road_projects -c "
+CREATE OR REPLACE VIEW projects_roadproject_points AS
+SELECT id, name, description, status, priority, budget, start_date, end_date,
+       created_at, updated_at, created_by_id, polyline_color,
+       ST_SetSRID(ST_MakePoint(longitude, latitude), 4326) AS geom
+FROM projects_roadproject WHERE latitude IS NOT NULL AND longitude IS NOT NULL;
+
+CREATE OR REPLACE VIEW projects_roadproject_polylines AS
+SELECT id, name, description, status, priority, budget, start_date, end_date,
+       created_at, updated_at, created_by_id, polyline_color,
+       ST_SetSRID(ST_MakeLine(ARRAY(
+           SELECT ST_MakePoint((coord->>1)::float, (coord->>0)::float)
+           FROM jsonb_array_elements(polyline_coordinates) AS coord
+       )), 4326) AS geom
+FROM projects_roadproject
+WHERE polyline_coordinates IS NOT NULL AND jsonb_array_length(polyline_coordinates) >= 2;"
 
 # Create superuser
 python manage.py createsuperuser
@@ -36,7 +55,7 @@ python manage.py createsuperuser
 # Run tests
 python manage.py test
 
-# Legacy SQLite setup (if needed)
+# Legacy SQLite setup (fallback only)
 python manage.py migrate --settings=road_project_manager.settings_test
 python manage.py runserver --settings=road_project_manager.settings_test
 ```
@@ -81,21 +100,22 @@ docker-compose up --build
 ## Project Architecture
 
 ### Backend (Django REST API)
-- **Database**: PostgreSQL running in Docker container (postgis/postgis:15-3.3)
-- **Models**: RoadProject, RoadSegment, ProjectPhoto, ProjectUpdate
-- **Current Setup**: Regular PostgreSQL with JSON coordinates (PostGIS capabilities commented out)
+- **Database**: PostGIS running in Docker container (postgis/postgis:15-3.3)
+- **Models**: RoadProject, RoadSegment, ProjectPhoto, ProjectUpdate (using standard Django models)
+- **PostGIS Integration**: Spatial views convert JSON coordinates to real PostGIS geometries
 - **Model Features**:
-  - JSON polyline coordinates: `[[lat, lng], [lat, lng], ...]`
+  - JSON polyline coordinates: `[[lat, lng], [lat, lng], ...]` (for frontend compatibility)
+  - PostGIS geometry views: `projects_roadproject_polylines`, `projects_roadproject_points`
   - Custom polyline colors with hex codes
   - Standard lat/lng fields for compatibility
-  - Future PostGIS fields available but commented out
+  - QGIS integration through database views
 - **Settings**:
-  - `settings.py` for PostgreSQL production (current)
+  - `settings.py` for PostGIS production (current)
   - `settings_test.py` for SQLite development (legacy)
 - **API**: RESTful endpoints with geographic data support and custom actions (nearby, segments, photos)
 - **Authentication**: Token-based authentication with login endpoint (`/api/auth/login/`) and full login page
-- **Admin**: Standard Django admin interface (PostGIS widgets commented out)
-- **Permissions**: Currently `AllowAny` for POC testing
+- **Admin**: Standard Django admin interface
+- **Permissions**: Token authentication required for most endpoints
 
 ### Frontend (React + Leaflet)
 - **Mapping**: Interactive maps with project visualization using Leaflet
